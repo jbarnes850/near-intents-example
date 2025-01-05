@@ -100,6 +100,13 @@ def register_token_storage(account, token, other_account=None):
             {"account_id": account_id}, MAX_GAS, 1250000000000000000000)
 
 
+def sign_quote(account, quote):
+    quote_data = quote.encode('utf-8')
+    signature = 'ed25519:' + base58.b58encode(account.signer.sign(quote_data)).decode('utf-8')
+    public_key = 'ed25519:' + base58.b58encode(account.signer.public_key).decode('utf-8')
+    return Commitment(standard="raw_ed25519", payload=quote, signature=signature, public_key=public_key)
+
+
 def create_token_diff_quote(account, token_in, amount_in, token_out, amount_out):
     token_in_fmt = get_asset_id(token_in)
     token_out_fmt = get_asset_id(token_out)
@@ -113,10 +120,7 @@ def create_token_diff_quote(account, token_in, amount_in, token_out, amount_out)
             Intent(intent='token_diff', diff={token_in_fmt: "-" + amount_in, token_out_fmt: amount_out})
         ]
     ))
-    quote_data = quote.encode('utf-8')
-    signature = 'ed25519:' + base58.b58encode(account.signer.sign(quote_data)).decode('utf-8')
-    public_key = 'ed25519:' + base58.b58encode(account.signer.public_key).decode('utf-8')
-    return Commitment(standard="raw_ed25519", payload=quote, signature=signature, public_key=public_key)
+    return sign_quote(account, quote)
 
 
 def submit_signed_intent(account, signed_intent):
@@ -212,6 +216,31 @@ def intent_swap(account, token_in, amount_in, token_out):
     return response
 
 
+def intent_withdraw(account, destination_address, token, amount, network='near'):
+    # {"deadline":"2025-01-05T21:08:23.453Z","intents":[{"intent":"ft_withdraw","token":"17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1","receiver_id":"root.near","amount":"1000000"}],"signer_id":"root.near"}
+    nonce = base64.b64encode(random.getrandbits(256).to_bytes(32, byteorder='big')).decode('utf-8')
+    quote = Quote(
+        signer_id=account.account_id,
+        nonce=nonce,
+        verifying_contract="intents.near",
+        deadline="2025-12-31T11:59:59.000Z",
+        intents=[
+            {
+                "intent": "ft_withdraw",
+                "token": ASSET_MAP[token]['token_id'],
+                "receiver_id": destination_address,
+                "amount": to_decimals(amount, ASSET_MAP[token]['decimals'])
+            }
+        ]
+    )
+    if network != 'near':
+        quote["intents"]["memo"] = "WITHDRAW_TO:%s" % destination_address
+    signed_quote = sign_quote(account, json.dumps(quote))
+    signed_intent = PublishIntent(signed_data=signed_quote, quote_hashes=[])
+    # print(json.dumps(signed_intent, indent=2))
+    return publish_intent(signed_intent)
+
+
 if __name__ == "__main__":
     # Trade between two accounts directly.
     # account1 = utils.account(
@@ -229,5 +258,9 @@ if __name__ == "__main__":
     # submit_signed_intent(account1, signed_intent)
 
     # Trade via solver bus.
-    account1 = account("")
-    print(intent_swap(account1, 'NEAR', 1, 'USDC'))
+    # account1 = account("")
+    # print(intent_swap(account1, 'NEAR', 1, 'USDC'))
+
+    # Withdraw to external address.
+    account1 = account("<>")
+    print(intent_withdraw(account1, "<>", "USDC", 1))
