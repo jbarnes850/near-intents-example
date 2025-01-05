@@ -202,6 +202,16 @@ def select_best_option(options):
     return best_option
 
 
+def intent_swap(account, token_in, amount_in, token_out):
+    options = fetch_options(IntentRequest().asset_in(token_in, amount_in).asset_out(token_out))
+    best_option = select_best_option(options)
+    amount_in = to_decimals(amount_in, ASSET_MAP[token_in]['decimals'])
+    quote = create_token_diff_quote(account, token_in, amount_in, token_out, best_option['amount_out'])
+    signed_intent = PublishIntent(signed_data=quote, quote_hashes=[best_option['quote_hash']])
+    response = publish_intent(signed_intent)
+    return response
+
+
 if __name__ == "__main__":
     # Trade between two accounts directly.
     # account1 = utils.account(
@@ -210,8 +220,8 @@ if __name__ == "__main__":
     #     "<>")
     # register_intent_public_key(account1)
     # register_intent_public_key(account2)
-    # intent_deposit(account1, 'near', 1)
-    # intent_deposit(account2, 'abg', 12000)
+    # intent_deposit(account1, 'NEAR', 1)
+    # intent_deposit(account2, 'USDC', 10)
     # quote1 = create_token_diff_quote(account1, 'NEAR', '1', 'USDC', '8')
     # quote2 = create_token_diff_quote(account2, 'USDC', '8', 'NEAR', '1')
     # signed_intent = SignedIntent(signed=[quote1, quote2])
@@ -220,10 +230,4 @@ if __name__ == "__main__":
 
     # Trade via solver bus.
     account1 = account("")
-    options = fetch_options(IntentRequest().asset_in('USDC', 1).asset_out('NEAR'))
-    best_option = select_best_option(options)
-    quote = create_token_diff_quote(account1, 'USDC', to_decimals(1, 6), 'NEAR', best_option['amount_out'])
-    signed_intent = PublishIntent(signed_data=quote, quote_hashes=[best_option['quote_hash']])
-    print(json.dumps(signed_intent, indent=2))
-    response = publish_intent(signed_intent)
-    print(response)
+    print(intent_swap(account1, 'NEAR', 1, 'USDC'))
