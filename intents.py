@@ -16,6 +16,7 @@ SOLVER_BUS_URL = "https://solver-relay-v2.chaindefuser.com/rpc"
 ASSET_MAP = {
     'USDC': { 
         'token_id': '17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1',
+        'omft': 'eth-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.omft.near',
         'decimals': 6,
     },
     'NEAR': {
@@ -234,10 +235,11 @@ def intent_withdraw(account, destination_address, token, amount, network='near')
         ]
     )
     if network != 'near':
-        quote["intents"]["memo"] = "WITHDRAW_TO:%s" % destination_address
+        quote["intents"][0]["token"] = ASSET_MAP[token]['omft']
+        quote["intents"][0]["receiver_id"] = ASSET_MAP[token]['omft']
+        quote["intents"][0]["memo"] = "WITHDRAW_TO:%s" % destination_address
     signed_quote = sign_quote(account, json.dumps(quote))
     signed_intent = PublishIntent(signed_data=signed_quote, quote_hashes=[])
-    # print(json.dumps(signed_intent, indent=2))
     return publish_intent(signed_intent)
 
 
@@ -263,4 +265,5 @@ if __name__ == "__main__":
 
     # Withdraw to external address.
     account1 = account("<>")
-    print(intent_withdraw(account1, "<>", "USDC", 1))
+    # print(intent_withdraw(account1, "<near account>", "USDC", 1))
+    print(intent_withdraw(account1, "<eth address>", "USDC", 1, network='eth'))
