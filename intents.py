@@ -16,9 +16,11 @@ SOLVER_BUS_URL = "https://solver-relay-v2.chaindefuser.com/rpc"
 ASSET_MAP = {
     'USDC': { 
         'token_id': '17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1',
+        'decimals': 6,
     },
     'NEAR': {
-        'token_id': 'wrap.near'
+        'token_id': 'wrap.near',
+        'decimals': 24,
     }
 }
 
@@ -108,7 +110,7 @@ def create_token_diff_quote(account, token_in, amount_in, token_out, amount_out)
         verifying_contract="intents.near",
         deadline="2025-12-31T11:59:59.000Z",
         intents=[
-            Intent(intent='token_diff', diff={token_in_fmt: amount_in, token_out_fmt: amount_out})
+            Intent(intent='token_diff', diff={token_in_fmt: "-" + amount_in, token_out_fmt: amount_out})
         ]
     ))
     quote_data = quote.encode('utf-8')
@@ -145,11 +147,11 @@ class IntentRequest(object):
         self.min_deadline_ms = min_deadline_ms
 
     def asset_in(self, asset_name, amount):
-        self.asset_in = {"asset": get_asset_id(asset_name), "amount": amount}
+        self.asset_in = {"asset": get_asset_id(asset_name), "amount": to_decimals(amount, ASSET_MAP[asset_name]['decimals'])}
         return self
 
     def asset_out(self, asset_name, amount=None):
-        self.asset_out = {"asset": get_asset_id(asset_name), "amount": amount}
+        self.asset_out = {"asset": get_asset_id(asset_name), "amount": to_decimals(amount, ASSET_MAP[asset_name]['decimals']) if amount else None}
         return self
 
     def serialize(self):
@@ -185,7 +187,7 @@ def publish_intent(signed_intent):
         "id": "dontcare",
         "jsonrpc": "2.0",
         "method": "publish_intent",
-        "params": [json.dumps(signed_intent)]
+        "params": [signed_intent]
     }
     response = requests.post(SOLVER_BUS_URL, json=rpc_request)
     return response.json()
@@ -210,18 +212,17 @@ if __name__ == "__main__":
     # register_intent_public_key(account2)
     # intent_deposit(account1, 'near', 1)
     # intent_deposit(account2, 'abg', 12000)
-    # quote1 = create_token_diff_quote(account1, 'near', '-1', 'abg', '8')
-    # quote2 = create_token_diff_quote(account2, 'near', '1', 'abg', '-8')
+    # quote1 = create_token_diff_quote(account1, 'NEAR', '1', 'USDC', '8')
+    # quote2 = create_token_diff_quote(account2, 'USDC', '8', 'NEAR', '1')
     # signed_intent = SignedIntent(signed=[quote1, quote2])
     # print(json.dumps(signed_intent, indent=2))
     # submit_signed_intent(account1, signed_intent)
 
     # Trade via solver bus.
     account1 = account("")
-    options = fetch_options(IntentRequest().asset_in('USDC', 10).asset_out('NEAR'))
+    options = fetch_options(IntentRequest().asset_in('USDC', 1).asset_out('NEAR'))
     best_option = select_best_option(options)
-    print(best_option)
-    quote = create_token_diff_quote(account1, 'NEAR', best_option['amount_out'], 'USDC', to_decimals(10, 6))
+    quote = create_token_diff_quote(account1, 'USDC', to_decimals(1, 6), 'NEAR', best_option['amount_out'])
     signed_intent = PublishIntent(signed_data=quote, quote_hashes=[best_option['quote_hash']])
     print(json.dumps(signed_intent, indent=2))
     response = publish_intent(signed_intent)
