@@ -217,8 +217,8 @@ If you prefer to set things up manually:
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/jbarnes850/near-intents-ai-agent
-cd near-intents-ai-agent
+git clone https://github.com/jbarnes850/near-intents-example
+cd near-intents-example
 ```
 
 2. **Set up your Python environment**
