@@ -136,7 +136,7 @@ read -r proceed
 
 if [ "$proceed" = "y" ]; then
     print_info "Executing swap..."
-    python intents/ai_agent.py
+    PYTHONPATH=$PYTHONPATH:./src python examples/basic_swap.py
     
     if [ $? -eq 0 ]; then
         print_success "Swap completed successfully!"

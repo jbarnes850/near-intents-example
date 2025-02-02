@@ -6,7 +6,58 @@ A Python implementation for interacting with NEAR using intents for multichain f
 
 ## Overview
 
-The NEAR Intents is a system for executing multichain transactions through intents. An intent represents a user's desired state change (e.g., "I want to swap X NEAR for Y USDC") rather than a specific execution path. This allows for more flexible and efficient execution of financial operations.
+The NEAR Defuse Protocol is a system for executing multichain transactions through intents. An intent represents a user's desired state change (e.g., "I want to swap X NEAR for Y USDC") rather than a specific execution path. This allows for more flexible and efficient execution of financial operations.
+
+### Protocol Architecture
+
+```bash
+NEAR Intents
+├── Intent Settlement
+│   ├── Solver Bus (off-chain message bus)
+│   └── Verifier (on-chain smart contract)
+└── Entities
+    ├── Distribution Channels
+    └── Solvers
+```
+
+### Implementation Architecture
+
+Our implementation maps to the protocol components as follows:
+
+```bash
+near-intents-ai-agent/
+├── src/near_intents/
+│   ├── near_intents.py    # Core protocol interactions
+│   │   ├── IntentRequest  # Creates intent requests
+│   │   ├── Quote         # Handles quote creation/signing
+│   │   └── ASSET_MAP     # Supported tokens configuration
+│   │
+│   └── ai_agent.py       # High-level interface
+│       └── AIAgent       # Manages the full swap flow
+│
+├── examples/             # Usage examples
+│   └── basic_swap.py    # Basic NEAR to USDC swap
+│
+└── tests/               # Test coverage
+    └── test_ai_agent.py
+```
+
+### Component Mapping
+
+1. **Solver Bus Integration** (`near_intents.py`):
+   - Communicates with the off-chain Solver Bus
+   - Fetches trading options and quotes
+   - Publishes signed intents
+
+2. **Intent Creation & Verification** (`near_intents.py`):
+   - Creates and signs token diff intents
+   - Interacts with the on-chain verifier contract
+   - Handles token deposits and withdrawals
+
+3. **AI Agent Interface** (`ai_agent.py`):
+   - Provides high-level swap operations
+   - Manages account setup and registration
+   - Handles token storage and deposits
 
 ### Key Components
 
@@ -62,34 +113,57 @@ User Request → AI Agent → NEAR Intents Library → Solver Bus → NEAR Block
 ### 1. Intent Creation Flow
 
 ```python
+# The complete flow from user request to execution:
+
 # 1. Initialize AI Agent with account
 agent = AIAgent("./account_file.json")
+# - Loads NEAR account
+# - Registers public key with intents contract
+# - Verifies account state and balance
 
 # 2. Deposit NEAR if needed
-agent.deposit_near(1.0)  # Deposit 1 NEAR
+agent.deposit_near(1.0)
+# - Checks current balance
+# - Registers token storage
+# - Deposits NEAR to intents contract
 
 # 3. Execute a swap
-agent.swap_near_to_token("USDC", 1.0)  # Swap 1 NEAR to USDC
+result = agent.swap_near_to_token("USDC", 1.0)
+# - Creates intent request
+# - Fetches quotes from Solver Bus
+# - Selects best quote
+# - Signs and submits intent
+# - Returns execution result
 ```
 
 ### 2. Under the Hood
 
-The swap process involves:
+The swap process involves several steps:
 
 1. **Quote Creation**:
-   - Generate random nonce
-   - Create token diff intent
-   - Sign the quote with ED25519
 
-2. **Solver Interaction**:
-   - Submit request to solver bus
-   - Receive and select best option
-   - Publish signed intent
+   ```python
+   # Create intent request
+   request = IntentRequest()
+       .set_asset_in("NEAR", amount_in)
+       .set_asset_out("USDC")
+   
+   # Get quotes from Solver Bus
+   options = fetch_options(request)
+   best_option = select_best_option(options)
+   ```
 
-3. **Execution**:
-   - Solver executes the intent
-   - State changes are verified
-   - Transaction is completed
+2. **Intent Execution**:
+
+   ```python
+   # Create and sign quote
+   quote = create_token_diff_quote(
+       account, "NEAR", amount_in, "USDC", best_option['amount_out']
+   )
+   
+   # Submit to Solver Bus
+   response = publish_intent(quote)
+   ```
 
 ## Setup and Configuration
 
