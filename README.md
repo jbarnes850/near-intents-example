@@ -7,55 +7,45 @@ A Python implementation for interacting with NEAR using intents for multichain t
 ## System Architecture & Flow
 
 ```mermaid
-graph TB
-    subgraph User["User Interaction"]
-        A[User] -->|1. Initialize| B[AI Agent]
-        B -->|2. Deposit NEAR| C[Intent Contract]
-    end
+graph TD
+    A([User]) --> B[AI Agent]
+    B --> C[Intent Contract]
+    C --> D[Intent Request]
+    D --> E[Solver Bus]
+    E --> F[Solvers Pool]
+    F --> E
+    E --> D
+    D --> G[Signed Intent]
+    G --> H[Verifier Contract]
+    H --> I[State Change]
 
-    subgraph Intent["Intent Settlement"]
-        C -->|3. Create Intent| D[Intent Request]
-        D -->|4. Request Quote| E[Solver Bus]
-        E -->|5. Get Options| F[Solvers]
-        F -->|6. Return Quote| E
-        E -->|7. Best Quote| D
-    end
-
-    subgraph Execution["Transaction Execution"]
-        D -->|8. Sign Quote| G[Signed Intent]
-        G -->|9. Submit| H[Verifier Contract]
-        H -->|10. Execute| I[State Change]
-    end
-
-    subgraph Components["Key Components"]
-        J[near_intents.py]
-        K[ai_agent.py]
-        L[Solver Bus API]
-        M[NEAR Contract]
-    end
-
-    style User fill:#f5f5f5,stroke:#333,stroke-width:2px
-    style Intent fill:#e1f5fe,stroke:#333,stroke-width:2px
-    style Execution fill:#e8f5e9,stroke:#333,stroke-width:2px
-    style Components fill:#fff3e0,stroke:#333,stroke-width:2px
+    style A fill:#f9f9f9
+    style B fill:#d4edda
+    style C fill:#cce5ff
+    style D fill:#cce5ff
+    style E fill:#fff3cd
+    style F fill:#fff3cd
+    style G fill:#e2e3e5
+    style H fill:#f8d7da
+    style I fill:#f8d7da
 ```
 
 ### Flow Description
 
-1. **User Interaction (Steps 1-2)**:
-   - User initializes AI Agent with account credentials
-   - Agent deposits NEAR tokens for intent operations
+1. **Initialization**:
+   - User initializes AI Agent with credentials
+   - Agent deposits NEAR tokens for operations
 
-2. **Intent Creation (Steps 3-7)**:
-   - Agent creates intent request (e.g., "Swap 1 NEAR for USDC")
-   - Request is sent to Solver Bus
-   - Solvers provide quotes for execution
-   - Best quote is selected based on rate
+2. **Quote Process**:
+   - Create intent request for token swap
+   - Query Solver Bus for quotes
+   - Solvers provide best execution options
+   - Best quote is selected
 
-3. **Execution (Steps 8-10)**:
-   - Agent signs the selected quote
-   - Signed intent is submitted to Verifier Contract
-   - State changes are executed on-chain
+3. **Execution**:
+   - Sign the selected quote
+   - Submit to Verifier Contract
+   - Execute state changes on-chain
 
 ### Implementation Components
 
