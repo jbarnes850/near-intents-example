@@ -2,7 +2,67 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Python implementation for interacting with NEAR using intents for multichain financial products. This implementation provides an AI Agent that automates token swaps and other operations on the NEAR mainnet.
+A Python implementation for interacting with NEAR using intents for multichain transactions. This implementation provides an AI Agent that automates token swaps and other operations on the NEAR mainnet.
+
+## System Architecture & Flow
+
+```mermaid
+graph TB
+    subgraph User["User Interaction"]
+        A[User] -->|1. Initialize| B[AI Agent]
+        B -->|2. Deposit NEAR| C[Intent Contract]
+    end
+
+    subgraph Intent["Intent Settlement"]
+        C -->|3. Create Intent| D[Intent Request]
+        D -->|4. Request Quote| E[Solver Bus]
+        E -->|5. Get Options| F[Solvers]
+        F -->|6. Return Quote| E
+        E -->|7. Best Quote| D
+    end
+
+    subgraph Execution["Transaction Execution"]
+        D -->|8. Sign Quote| G[Signed Intent]
+        G -->|9. Submit| H[Verifier Contract]
+        H -->|10. Execute| I[State Change]
+    end
+
+    subgraph Components["Key Components"]
+        J[near_intents.py]
+        K[ai_agent.py]
+        L[Solver Bus API]
+        M[NEAR Contract]
+    end
+
+    style User fill:#f5f5f5,stroke:#333,stroke-width:2px
+    style Intent fill:#e1f5fe,stroke:#333,stroke-width:2px
+    style Execution fill:#e8f5e9,stroke:#333,stroke-width:2px
+    style Components fill:#fff3e0,stroke:#333,stroke-width:2px
+```
+
+### Flow Description
+
+1. **User Interaction (Steps 1-2)**:
+   - User initializes AI Agent with account credentials
+   - Agent deposits NEAR tokens for intent operations
+
+2. **Intent Creation (Steps 3-7)**:
+   - Agent creates intent request (e.g., "Swap 1 NEAR for USDC")
+   - Request is sent to Solver Bus
+   - Solvers provide quotes for execution
+   - Best quote is selected based on rate
+
+3. **Execution (Steps 8-10)**:
+   - Agent signs the selected quote
+   - Signed intent is submitted to Verifier Contract
+   - State changes are executed on-chain
+
+### Implementation Components
+
+- **AI Agent** (`ai_agent.py`): High-level interface for users
+- **NEAR Intents** (`near_intents.py`): Core protocol interactions
+- **Solver Bus**: Off-chain quote aggregation
+- **Verifier Contract**: On-chain execution and settlement
 
 ## Overview
 
