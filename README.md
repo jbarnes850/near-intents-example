@@ -6,7 +6,7 @@ A Python implementation for interacting with NEAR using intents for multichain f
 
 ## Overview
 
-The NEAR Defuse Protocol is a system for executing multichain transactions through intents. An intent represents a user's desired state change (e.g., "I want to swap X NEAR for Y USDC") rather than a specific execution path. This allows for more flexible and efficient execution of financial operations.
+NEAR Intents is a system for executing multichain transactions. An intent represents a user's desired state change (e.g., "I want to swap X NEAR for Y USDC") rather than a specific execution path. This allows for more flexible and efficient execution of financial operations.
 
 ### Protocol Architecture
 
